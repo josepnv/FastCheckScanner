@@ -9,29 +9,52 @@
         
     </head>
     <body>
-       <!--<style>
-            .row{
+       <style>
+            .row2{
             border-color: skyblue;
             border-style: outset; 
             border-width: 4px;
             }
-            h4{
-                font-weight: bold;
-                color:red;
-            }
-            .col-md-4 {
-                width: 50%;
-                text-align: justify;
-            }
-        </style>-->
+         </style>
+         <div id="content">
+            <?php
+            include('controlador.php'); //y ahora mostramos la pagina llamada
+            ?>
+        </div>
         <div class="container">
             <?php
+            //conexion con glpi real
+            //include '../glpi/config/config_db.php';
+            
             include 'config.php';
+            
+            //funciones
+            function estado_averia($op){
+                switch ($op){
+                            case 1:
+                                echo "<h4> Sin Asignar </h4>";
+                                break;
+                            case 2:
+                                echo "<h4> Asignada </h4>";
+                                break;
+                            case 3:
+                                echo "<h4> Planificada </h4>";
+                                break;
+                            case 4:
+                                echo "<h4> En Espera </h4>";
+                                break;
+                            case 5:
+                                echo "<h4> Resuelta </h4>";
+                                break;
+                            case 6:
+                                echo "<h4> Cerrada!!!!! </h4>";
+                                break;
+                            default :
+                                echo "<h5> Sin estado </h5>";
+                        }
+            }
 
-            // $codigo = $_GET['code'];
-            $codigo = 747342;
-            //$codigo = 451952;
-            //$codigo=362810;
+            $codigo = $_GET['code'];
 
             $sqlram = <<<SQL
         SELECT ram.size 
@@ -71,7 +94,7 @@ SQL;
                 echo "<h1>Ultimas incidencias</h1>";
                 //if ($stmt = $con->prepare($sqlinc)) {
                 //    $stmt->bind_result($completename, $name, $otherserial, $date, $texto);
-                $result = $con->query($sqlinc);
+                $result = $conexion->query($sqlinc);
                 if ($result->num_rows > 0) {
                     while ($row = $result->fetch_assoc()){
                    // while ($stmt->fetch()) {
@@ -89,28 +112,7 @@ EOF;
 EOF;
                         
                          echo "<h5>Fecha:" .$row['date']. "</h5>";
-                         switch ($row['estado']){
-                            case 1:
-                                echo "<h4> Sin Asignar </h4>";
-                                break;
-                            case 2:
-                                echo "<h4> Asignada </h4>";
-                                break;
-                            case 3:
-                                echo "<h4> Planificada </h4>";
-                                break;
-                            case 4:
-                                echo "<h4> En Espera </h4>";
-                                break;
-                            case 5:
-                                echo "<h4> Resuelta </h4>";
-                                break;
-                            case 6:
-                                echo "<h4> Cerrada </h4>";
-                                break;
-                            default :
-                                echo "<h4> Sin estado </h4>";
-                        }
+                         estado_averia($row['estado']);
                         echo "<h5>Incidencia:" .$row['texto']."</h5>";
                         echo <<< EOF
                         </div>
@@ -122,14 +124,14 @@ EOF;
                     }
                 } else {
                     echo "error consulta";
-                    die('Imposible preparar la consulta. ' . $con->error);
+                    die('Imposible preparar la consulta. ' . $conexion->error);
                 }
-                $con->close();
+                $conexion->close();
             } else {
-                if ($stmt = $con->prepare($sql)) {
+                if ($stmt = $conexion->prepare($sql)) {
                     $stmt->bind_param('s', $codigo);
                     if (!$stmt->execute()) {
-                        die('Error de ejecución de la consulta. ' . $con->error);
+                        die('Error de ejecución de la consulta. ' . $conexion->error);
                     }
 
                     $stmt->bind_result($name, $serial, $otherserial, $completename, $date_mod);
@@ -145,15 +147,15 @@ EOF;
                         echo "</div>";
                     }
                 } else {
-                    die('Imposible preparar la consulta. ' . $con->error);
+                    die('Imposible preparar la consulta. ' . $conexion->error);
                 }
                 $stmt->close();
                 $count = 0;
 
-                if ($stmt = $con->prepare($sqlram)) {
+                if ($stmt = $conexion->prepare($sqlram)) {
                     $stmt->bind_param('s', $codigo);
                     if (!$stmt->execute()) {
-                        die('Error de ejecución de la consulta. ' . $con->error);
+                        die('Error de ejecución de la consulta. ' . $conexion->error);
                     }
 
                     $stmt->bind_result($size);
@@ -165,7 +167,7 @@ EOF;
                         echo "</div>";
                     }
                 } else {
-                    die('Imposible preparar la consulta. ' . $con->error);
+                    die('Imposible preparar la consulta. ' . $conexion->error);
                     echo "<div class='col-md-4'>Ram:</div>";
                     echo "<div class='col-md-4'>No tiene RAM</div>";
                 }
@@ -175,55 +177,31 @@ EOF;
                 
                 $count = 0;
 
-                if ($stmt = $con->prepare($sqlpcinc)) {
-                    $stmt->bind_param('s', $codigo);
-                    if (!$stmt->execute()) {
-                        die('Error de ejecución de la consulta. ' . $con->error);
-                    }
-                    $stmt->bind_result($fecha,$texto,$problema,$estado);
-                    echo "<h1>Ultimas Incidencias</H1>";
-                    while ($stmt->fetch()) {
-                        $count = $count + 1;
-                        echo "<h2>Incidencia ".$count."</H2>";
-                        echo <<< EOF
-                        <div class='row'>
-                        <div class='col-md-3'>
+                $result = $conexion->query($sqlpcinc);
+                if ($result->num_rows > 0) {
+                    echo "<h2> Incidencias</H2>";
+                    while ($row = $result->fetch_assoc()){
+                        if($row['fecha']=="" && $row['texto']=="" && $row['estado']=="" && $row['problema']==""){
+                           echo "<h4>No se han encontrado incidencias de este equipo</H4>"; 
+                        }else{
+                    echo <<< EOF
+                        <div class='row2'>
+                        <div class='col-md-4'> 
 EOF;
-                         echo "<h5>Fecha:" .$row['date']. "</h5>";
-                         switch ($row['estado']){
-                            case 1:
-                                echo "<h4> Sin Asignar </h4>";
-                                break;
-                            case 2:
-                                echo "<h4> Asignada </h4>";
-                                break;
-                            case 3:
-                                echo "<h4> Planificada </h4>";
-                                break;
-                            case 4:
-                                echo "<h4> En Espera </h4>";
-                                break;
-                            case 5:
-                                echo "<h4> Resuelta </h4>";
-                                break;
-                            case 6:
-                                echo "<h4> Cerrada </h4>";
-                                break;
-                                
-                            default :
-                                echo "<h4> Sin estado </h4>";
+                    echo "<h5>Fecha:" .$row['fecha']. "</h5>";
+                    estado_averia($row['estado']);
                         echo "<h5>Incidencia:" .$row['texto']."</h5>";
-                        echo <<< EOF
-                        </div>
-EOF;
+
+                        echo "</div>";
                         echo "<div class='col-md-4'>";
                         echo "<h5>" .$row['problema']. "</h5>";
                         echo "</div>";
                         echo "</div>";
- 
+                        }
+
                         }
                     }
-                }
+                
                 $stmt->close();
             }
             ?>
